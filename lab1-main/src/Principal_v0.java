@@ -1,136 +1,103 @@
-
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 
-public class Principal_v0 {
+public class Principal {
 
-	public final static Path path = Paths			
-			.get("src\\fortune-br.txt");
-	private int NUM_FORTUNES = 0;
+    public final static Path FILE_PATH = Paths.get("fortune-br.txt");
+    private int totalFortunes = 0;
 
-	public class FileReader {
+    public class FortuneFileHandler {
 
-		public int countFortunes() throws FileNotFoundException {
+        // Conta quantas fortunas (separadas por "%") existem no arquivo
+        public int countFortunes() throws FileNotFoundException {
+            int fortuneCount = 0;
 
-			int lineCount = 0;
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    new BufferedInputStream(new FileInputStream(FILE_PATH.toString()))))) {
 
-			InputStream is = new BufferedInputStream(new FileInputStream(
-					path.toString()));
-			try (BufferedReader br = new BufferedReader(new InputStreamReader(
-					is))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.equals("%")) fortuneCount++;
+                }
+                System.out.println(fortuneCount);
 
-				String line = "";
-				while (!(line == null)) {
+            } catch (IOException e) {
+                System.out.println("SHOW: Exceção na leitura do arquivo.");
+            }
+            return fortuneCount;
+        }
 
-					if (line.equals("%"))
-						lineCount++;
+        // Faz o parsing do arquivo e armazena as fortunas em um HashMap
+        public void parseFile(HashMap<Integer, String> fortuneMap) throws FileNotFoundException {
 
-					line = br.readLine();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    new BufferedInputStream(new FileInputStream(FILE_PATH.toString()))))) {
 
-				}// fim while
+                int fortuneIndex = 0;
+                String line;
 
-				System.out.println(lineCount);
-			} catch (IOException e) {
-				System.out.println("SHOW: Excecao na leitura do arquivo.");
-			}
-			return lineCount;
-		}
+                while ((line = reader.readLine()) != null) {
 
-		public void parser(HashMap<Integer, String> hm)
-				throws FileNotFoundException {
+                    StringBuilder fortune = new StringBuilder();
+                    while (line != null && !line.equals("%")) {
+                        fortune.append(line).append("\n");
+                        line = reader.readLine();
+                    }
 
-			InputStream is = new BufferedInputStream(new FileInputStream(
-					path.toString()));
-			try (BufferedReader br = new BufferedReader(new InputStreamReader(
-					is))) {
+                    fortuneMap.put(fortuneIndex, fortune.toString());
+                    fortuneIndex++; // Incrementa o índice para a próxima fortuna
+                }
 
-				int lineCount = 0;
+            } catch (IOException e) {
+                System.out.println("SHOW: Exceção na leitura do arquivo.");
+            }
+        }
 
-				String line = "";
-				while (!(line == null)) {
+        // Lê uma fortuna aleatória do HashMap
+        public void readRandomFortune(HashMap<Integer, String> fortuneMap) {
+            Object[] keys = fortuneMap.keySet().toArray();
+            int randomIndex = new SecureRandom().nextInt(keys.length);
+            Object randomKey = keys[randomIndex];
 
-					if (line.equals("%"))
-						lineCount++;
+            String fortune = fortuneMap.get(randomKey);
 
-					line = br.readLine();
-					StringBuffer fortune = new StringBuffer();
-					while (!(line == null) && !line.equals("%")) {
-						fortune.append(line + "\n");
-						line = br.readLine();
-						// System.out.print(lineCount + ".");
-					}
+            System.out.println("\n\nChave: " + randomKey);
+            System.out.println("Fortuna:\n" + fortune);
+        }
 
-					hm.put(lineCount, fortune.toString());
-					System.out.println(fortune.toString());
+        // Escreve uma nova fortuna no HashMap
+        public void addFortune(HashMap<Integer, String> fortuneMap) {
+            Scanner scanner = new Scanner(System.in);
 
-					System.out.println(lineCount);
-				}// fim while
+            System.out.print("Digite a fortuna que desejas adicionar na base de dados: ");
+            String newFortune = scanner.nextLine();
 
-			} catch (IOException e) {
-				System.out.println("SHOW: Excecao na leitura do arquivo.");
-			}
-		}
+            int newKey = fortuneMap.size(); // Usa o tamanho do mapa para gerar uma nova chave
+            fortuneMap.put(newKey, newFortune);
 
-		public void read(HashMap<Integer, String> hm) 
-		throws FileNotFoundException {
-			InputStream is = new BufferedInputStream(new FileInputStream(path.toString()));
-			try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
-				int lineCount = 0;
-				String line = "";
-				while ((line = br.readLine()) != null) {
-					if (line.equals("%")) lineCount++;
-					StringBuffer fortune = new StringBuffer();
-					while ((line = br.readLine()) != null && !line.equals("%")) {
-						fortune.append(line + "\n");
-					}
-					hm.put(lineCount, fortune.toString());
-				}
-			} catch (IOException e) {
-				System.out.println("SHOW: Exceção na leitura do arquivo.");
-			}
-		}
-		
+            System.out.println("Fortuna adicionada!\nChave: " + newKey + "\nFortuna: " + newFortune);
+        }
+    }
 
-		public void write(HashMap<Integer, String> hm) 
-		throws FileNotFoundException {
-			
-			try (BufferedWriter bw = new BufferedWriter(new FileWriter(path.toString()))) {
-				for (Map.Entry<Integer, String> entry : hm.entrySet()) {
-					bw.write(entry.getValue());
-					bw.write("%\n");
-				}
-			} catch (IOException e) {
-				System.out.println("SHOW: Exceção na escrita do arquivo.");
-			}
-		}
-		
-	}
+    // Método principal para iniciar o processo
+    public void iniciar() {
+        FortuneFileHandler fileHandler = new FortuneFileHandler();
+        try {
+            totalFortunes = fileHandler.countFortunes();
+            HashMap<Integer, String> fortuneMap = new HashMap<>();
+            fileHandler.parseFile(fortuneMap);
+            fileHandler.readRandomFortune(fortuneMap);
+            fileHandler.addFortune(fortuneMap);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
 
-	public void iniciar() {
-
-		FileReader fr = new FileReader();
-		try {
-			NUM_FORTUNES = fr.countFortunes();
-			HashMap hm = new HashMap<Integer, String>();
-			fr.parser(hm);
-			fr.read(hm);
-			fr.write(hm);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-
-	}
-
-	public static void main(String[] args) {
-		new Principal_v0().iniciar();
-	}
-
+    public static void main(String[] args) {
+        new Principal().iniciar();
+    }
 }
